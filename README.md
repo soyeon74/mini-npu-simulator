@@ -13,10 +13,14 @@ NumPy, pandas 등 외부 라이브러리는 사용하지 않았으며 Python 표
 ## 2. 제출 파일
 
 - `main.py` : Mini NPU Simulator 실행 파일
-- `data.json` : 과제에서 제공한 데이터 파일
+- `data.json` : 학습 및 동작 검증을 위한 **예제** 데이터 (과제 원본 아님)
+- `test_main.py` : MAC 계산 및 예제 데이터 자동 검사
 - `README.md` : 실행 방법, 구현 내용, 결과 리포트
 
 > `main.py`와 `data.json`은 같은 폴더에 두는 것을 권장합니다.
+
+**주의:** 저장소의 `data.json`은 프로그램 실행을 확인하기 위해 작성한 예제입니다.
+과제에서 별도 제공한 원본 데이터로 평가받는 경우, 해당 원본으로 교체해 다시 검증해야 합니다.
 
 ---
 
@@ -32,6 +36,12 @@ NumPy, pandas 등 외부 라이브러리는 사용하지 않았으며 Python 표
 
 ```bash
 python main.py
+```
+
+예제 데이터 검증은 메뉴에서 `2`를 선택합니다. 자동 검사는 다음과 같습니다.
+
+```bash
+python -m unittest -v
 ```
 
 Windows에서 `python` 명령이 동작하지 않으면 다음 명령을 사용할 수 있습니다.
