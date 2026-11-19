@@ -1,5 +1,4 @@
 import json
-import math
 import re
 import time
 from pathlib import Path
@@ -85,6 +84,22 @@ def mac(pattern, filter_matrix):
     return total
 
 
+def flatten_matrix(matrix):
+    """2차원 행렬을 행 순서대로 1차원 리스트로 바꾼다."""
+    return [value for row in matrix for value in row]
+
+
+def mac_flat(flat_pattern, flat_filter):
+    """1차원 배열에서 MAC 연산을 직접 반복하여 계산한다."""
+    if len(flat_pattern) != len(flat_filter):
+        raise ValueError("1차원 패턴과 필터 길이가 다릅니다.")
+
+    total = 0.0
+    for index in range(len(flat_pattern)):
+        total += flat_pattern[index] * flat_filter[index]
+    return total
+
+
 def compare_scores(score_a, score_b, label_a="A", label_b="B"):
     """epsilon 기반으로 두 점수를 비교한다."""
     if abs(score_a - score_b) < EPSILON:
@@ -141,8 +156,20 @@ def measure_mac(pattern, filter_matrix, repeat=PERF_REPEAT):
     return sum(elapsed) / len(elapsed)
 
 
+def measure_call(operation, repeat=PERF_REPEAT):
+    """화면 출력과 파일 읽기를 제외하고 호출 시간을 반복 측정한다."""
+    elapsed = []
+    for _ in range(repeat):
+        start = time.perf_counter()
+        operation()
+        elapsed.append((time.perf_counter() - start) * 1000.0)
+    return sum(elapsed) / len(elapsed)
+
+
 def generate_cross(size):
     """성능 측정용 Cross 패턴을 생성한다."""
+    if not isinstance(size, int) or isinstance(size, bool) or size < 3 or size % 2 == 0:
+        raise ValueError("크기는 3 이상의 홀수여야 합니다.")
     matrix = [[0.0 for _ in range(size)] for _ in range(size)]
     mid = size // 2
 
@@ -155,6 +182,8 @@ def generate_cross(size):
 
 def generate_x(size):
     """성능 측정용 X 패턴을 생성한다."""
+    if not isinstance(size, int) or isinstance(size, bool) or size < 3 or size % 2 == 0:
+        raise ValueError("크기는 3 이상의 홀수여야 합니다.")
     matrix = [[0.0 for _ in range(size)] for _ in range(size)]
 
     for i in range(size):
@@ -181,6 +210,62 @@ def print_performance_table(sizes, filters_by_size=None):
 
         avg_ms = measure_mac(pattern, filter_matrix)
         print(f"{size}×{size:<7}{avg_ms:>16.6f}{size * size:>18}")
+
+
+def print_matrix(matrix):
+    for row in matrix:
+        print(" ".join(f"{value:g}" for value in row))
+
+
+def run_generator_mode():
+    """보너스: 생성한 패턴을 즉시 판정하고 MAC 속도도 확인한다."""
+    raw = input("생성할 크기 N (3~25의 홀수, 예: 5): ").strip()
+    try:
+        size = int(raw)
+        if size < 3 or size > 25 or size % 2 == 0:
+            raise ValueError
+    except ValueError:
+        print("입력 오류: 3부터 25까지의 홀수를 입력하세요.")
+        return
+
+    cross = generate_cross(size)
+    x_pattern = generate_x(size)
+    print_title(f"[보너스] {size}×{size} 패턴 자동 생성")
+    print("Cross 패턴:")
+    print_matrix(cross)
+    print("X 패턴:")
+    print_matrix(x_pattern)
+
+    print("\n생성 패턴 자체 검증:")
+    for name, pattern in (("Cross", cross), ("X", x_pattern)):
+        cross_score = mac(pattern, cross)
+        x_score = mac(pattern, x_pattern)
+        decision = compare_scores(cross_score, x_score, "Cross", "X")
+        print(f"{name}: Cross={cross_score:g}, X={x_score:g}, 판정={decision}")
+    print_performance_table([size])
+
+
+def run_optimization_mode():
+    """보너스: 같은 데이터와 반복 횟수로 2차원/1차원 MAC를 비교한다."""
+    print_title(f"[보너스] 2차원과 1차원 MAC 비교 (각 {PERF_REPEAT}회)")
+    print("배열 변환 시간은 제외하고 MAC 계산 함수만 측정합니다.")
+    print(f"{'크기':<10}{'2차원(ms)':>15}{'1차원(ms)':>15}{'점수 일치':>12}")
+    print("-" * 52)
+
+    for size in (3, 5, 13, 25):
+        pattern = generate_cross(size)
+        filter_matrix = generate_x(size)
+        flat_pattern = flatten_matrix(pattern)
+        flat_filter = flatten_matrix(filter_matrix)
+
+        original_score = mac(pattern, filter_matrix)
+        flat_score = mac_flat(flat_pattern, flat_filter)
+        matches = abs(original_score - flat_score) < EPSILON
+        average_2d = measure_call(lambda: mac(pattern, filter_matrix))
+        average_1d = measure_call(lambda: mac_flat(flat_pattern, flat_filter))
+        print(f"{size}×{size:<7}{average_2d:>15.6f}{average_1d:>15.6f}{'예' if matches else '아니요':>12}")
+
+    print("※ 연산 속도 우열은 실행 환경에 따라 달라집니다. 1차원 변환 비용은 별도입니다.")
 
 
 def run_manual_mode():
@@ -460,6 +545,8 @@ def main():
         print("\n[모드 선택]")
         print("1. 사용자 입력 (3x3)")
         print("2. data.json 분석")
+        print("3. 패턴 자동 생성 (보너스)")
+        print("4. 1차원 최적화 비교 (보너스)")
         print("0. 종료")
 
         choice = input("선택: ").strip()
@@ -468,11 +555,15 @@ def main():
             run_manual_mode()
         elif choice == "2":
             run_json_mode()
+        elif choice == "3":
+            run_generator_mode()
+        elif choice == "4":
+            run_optimization_mode()
         elif choice == "0":
             print("프로그램을 종료합니다.")
             break
         else:
-            print("입력 오류: 0, 1, 2 중 하나를 입력하세요.")
+            print("입력 오류: 0, 1, 2, 3, 4 중 하나를 입력하세요.")
 
 
 if __name__ == "__main__":
