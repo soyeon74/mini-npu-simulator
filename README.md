@@ -41,27 +41,9 @@
 
 ## 2. 프로그램 작동 순서
 
-```mermaid
-flowchart TD
-    A["▶ 프로그램 시작"] --> B{"메뉴 선택"}
-    B -->|"1 직접 입력"| C["필터 A·B / 패턴 입력"]
-    B -->|"2 파일 분석"| D["data.json 읽기 및 검사"]
-    B -->|"3 자동 생성"| I["N×N Cross·X 패턴 생성"]
-    B -->|"4 최적화"| J["2차원과 1차원 성능 비교"]
-    C --> E["MAC: 같은 칸 곱하기 + 모두 더하기"]
-    D --> E
-    E --> F["두 필터 점수 비교"]
-    F --> G["판정과 점수 출력"]
-    G --> H["파일 모드: expected와 비교해 PASS/FAIL"]
-    classDef blue fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
-    classDef amber fill:#fef3c7,stroke:#d97706,color:#78350f;
-    classDef green fill:#dcfce7,stroke:#16a34a,color:#14532d;
-    classDef purple fill:#f3e8ff,stroke:#9333ea,color:#581c87;
-    class A,B blue;
-    class C,D amber;
-    class E,F green;
-    class G,H,I,J purple;
-```
+![Mini NPU Simulator 실행 흐름도](images/mini_npu_flow_preview.png)
+
+*위 그림은 1·2번 필수 모드와 3·4번 보너스 모드의 처리 순서를 구분한 설명용 도식입니다.*
 
 **평가 설명:** “직접 입력하거나 JSON 파일을 읽어 패턴과 필터를 준비합니다. 같은 위치의 숫자를 곱한 후 합계를 구하고, 점수가 큰 필터로 판정합니다. 파일 모드에서는 정답과 일치하는지도 검사합니다.”
 
