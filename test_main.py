@@ -13,10 +13,12 @@ from main import (
     load_filters,
     mac,
     mac_flat,
+    normalize_label,
 )
 
 
 class TestMiniNPU(unittest.TestCase):
+    # [테스트 1] X 패턴의 점수와 승자 계산
     def test_cross_vs_x(self):
         cross = generate_cross(3)
         x = generate_x(3)
@@ -24,13 +26,16 @@ class TestMiniNPU(unittest.TestCase):
         self.assertEqual(mac(x, x), 5.0)
         self.assertEqual(compare_scores(1.0, 5.0), "B")
 
+    # [테스트 2] 매우 작은 점수 차이의 동점 판정
     def test_close_scores_undecided(self):
         self.assertEqual(compare_scores(1, 1 + 1e-10), "UNDECIDED")
 
+    # [테스트 3] 행렬 크기 불일치 오류 처리
     def test_invalid_shape(self):
         with self.assertRaises(ValueError):
             mac([[1, 0], [0, 1]], [[1, 0]])
 
+    # [테스트 4] 학습용 JSON 전체 케이스 PASS 판정
     def test_sample_data(self):
         data_path = Path(__file__).with_name("data.json")
         data = json.loads(data_path.read_text(encoding="utf-8"))
@@ -41,6 +46,7 @@ class TestMiniNPU(unittest.TestCase):
                 result = analyze_case(case_id, case_data, filters)
                 self.assertEqual(result["status"], "PASS", result["reason"])
 
+    # [테스트 5] 2차원/1차원 MAC 결과 일치
     def test_flattened_mac_matches_original(self):
         for size in (3, 5, 13, 25):
             with self.subTest(size=size):
@@ -52,6 +58,7 @@ class TestMiniNPU(unittest.TestCase):
                 )
                 self.assertEqual(len(flatten_matrix(cross)), size * size)
 
+    # [테스트 6] 생성된 Cross/X 패턴의 정답 판정
     def test_generator_recognizes_both_patterns(self):
         for size in (3, 5, 13, 25):
             with self.subTest(size=size):
@@ -66,14 +73,31 @@ class TestMiniNPU(unittest.TestCase):
                     "X",
                 )
 
+    # [테스트 7] 1차원 길이 불일치 오류
     def test_flattened_mac_invalid_length(self):
         with self.assertRaises(ValueError):
             mac_flat([1, 0], [1])
 
+    # [테스트 8] 잘못된 홀수 크기 입력 검증
     def test_generator_invalid_size(self):
         for size in (0, 2, 4, -1):
             with self.subTest(size=size), self.assertRaises(ValueError):
                 generate_cross(size)
+
+    # [테스트 9] 라벨 표기 통일과 미지원 라벨 확인
+    def test_label_normalization(self):
+        self.assertEqual(normalize_label("+"), "Cross")
+        self.assertEqual(normalize_label("cross"), "Cross")
+        self.assertEqual(normalize_label("Cross"), "Cross")
+        self.assertEqual(normalize_label("십자가"), "Cross")
+        self.assertEqual(normalize_label("x"), "X")
+        self.assertEqual(normalize_label(" X "), "X")
+        self.assertIsNone(normalize_label("Circle"))
+
+    # [테스트 10] EPSILON보다 작은 차이 및 큰 차이 비교
+    def test_epsilon_boundary_behavior(self):
+        self.assertEqual(compare_scores(1.0, 1.0 + 1e-10), "UNDECIDED")
+        self.assertEqual(compare_scores(1.0, 1.0 + 1e-6), "B")
 
 
 if __name__ == "__main__":
