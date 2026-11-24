@@ -35,16 +35,39 @@ class TestMiniNPU(unittest.TestCase):
         with self.assertRaises(ValueError):
             mac([[1, 0], [0, 1]], [[1, 0]])
 
-    # [테스트 4] 학습용 JSON 전체 케이스 PASS 판정
+    # [테스트 4] 정상 학습용 8건 PASS와 가중치 데이터의 3 PASS/3 동점 FAIL을 각각 검증한다.
     def test_sample_data(self):
-        data_path = Path(__file__).with_name("data.json")
-        data = json.loads(data_path.read_text(encoding="utf-8"))
-        filters, errors = load_filters(data)
+        # 기본 Cross/X 예제 8건은 별도로 보존해 항상 모두 PASS인지 확인한다.
+        sample_path = Path(__file__).with_name("data_sample_8pass.json")
+        sample_data = json.loads(sample_path.read_text(encoding="utf-8"))
+        sample_filters, errors = load_filters(sample_data)
         self.assertEqual(errors, [])
-        for case_id, case_data in data["patterns"].items():
-            with self.subTest(case_id=case_id):
-                result = analyze_case(case_id, case_data, filters)
+        self.assertEqual(len(sample_data["patterns"]), 8)
+        for case_id, case_data in sample_data["patterns"].items():
+            with self.subTest(dataset="sample", case_id=case_id):
+                result = analyze_case(case_id, case_data, sample_filters)
                 self.assertEqual(result["status"], "PASS", result["reason"])
+
+        # 새 data.json은 의도적인 동점 사례를 포함한 별도 검증 시나리오이다.
+        scenario_path = Path(__file__).with_name("data.json")
+        scenario_data = json.loads(scenario_path.read_text(encoding="utf-8"))
+        scenario_filters, errors = load_filters(scenario_data)
+        self.assertEqual(errors, [])
+        expected_status = {
+            "size_5_1": "FAIL",
+            "size_5_2": "PASS",
+            "size_13_1": "PASS",
+            "size_13_2": "FAIL",
+            "size_25_1": "FAIL",
+            "size_25_2": "PASS",
+        }
+        self.assertEqual(set(scenario_data["patterns"]), set(expected_status))
+        for case_id, case_data in scenario_data["patterns"].items():
+            with self.subTest(dataset="weighted", case_id=case_id):
+                result = analyze_case(case_id, case_data, scenario_filters)
+                self.assertEqual(result["status"], expected_status[case_id], result["reason"])
+                if expected_status[case_id] == "FAIL":
+                    self.assertEqual(result["decision"], "UNDECIDED")
 
     # [테스트 5] 2차원/1차원 MAC 결과 일치
     def test_flattened_mac_matches_original(self):

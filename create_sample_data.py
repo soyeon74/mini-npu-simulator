@@ -1,4 +1,4 @@
-"""학습용 예제 data.json 생성기. 공식 과제 데이터가 아닙니다."""
+"""학습용 정상 예제 data_sample_8pass.json 생성기. 기본 data.json은 덮어쓰지 않습니다."""
 
 import json
 from pathlib import Path
@@ -35,7 +35,7 @@ def build_sample_data():
 # 이 파일을 직접 실행할 때만 아래 생성·저장 코드를 실행한다.
 if __name__ == "__main__":
     # 현재 코드 파일과 같은 폴더의 data.json을 저장 대상 파일로 정한다.
-    output = Path(__file__).with_name("data.json")
+    output = Path(__file__).with_name("data_sample_8pass.json")
     # 이미 파일이 있다면 사용자의 yes 입력 없이는 덮어쓰지 않는다.
     if output.exists():
         answer = input("기존 data.json을 예제 데이터로 덮어쓸까요? (yes 입력): ").strip()
