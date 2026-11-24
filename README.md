@@ -5,7 +5,7 @@
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?logo=python&logoColor=white)
 ![실행 방식](https://img.shields.io/badge/실행-콘솔-475569)
 ![외부 라이브러리](https://img.shields.io/badge/외부%20라이브러리-없음-16A34A)
-![자동 검사](https://img.shields.io/badge/자동%20검사-8%2F8%20통과-16A34A)
+![자동 검사](https://img.shields.io/badge/자동%20검사-10%2F10%20통과-16A34A)
 ![데이터 종류](https://img.shields.io/badge/데이터-학습용%20예제-F59E0B)
 
 ## 👀 30초 만에 이해하기
@@ -16,7 +16,7 @@
 | **왜 만들었나요?** | NPU에서 중요한 곱셈·누적 덧셈(MAC) 연산 이해 |
 | **입력은 무엇인가요?** | 0과 1로 표현된 2차원 배열(패턴)과 비교용 필터 |
 | **어떻게 판단하나요?** | 같은 위치의 숫자를 곱해서 더하고 점수가 큰 필터 선택 |
-| **검증 결과는요?** | 학습용 예제 패턴 **8/8 PASS**, 자동 검사 **8/8 OK** |
+| **검증 결과는요?** | `data.json` 학습용 예제 **8/8 PASS**, 자동 테스트 **10/10 OK** (교육장 PC 실행 기록) |
 | **무엇이 아닌가요?** | 실제 NPU 칩이나 학습하는 AI 모델이 아닌 **교육용 모의실험** |
 
 > [!IMPORTANT]
@@ -103,7 +103,7 @@ return total
 
 **왜 `range(3)` 대신 `range(len(pattern))`을 쓰나요?** 3×3 외에 5×5나 13×13에도 같은 코드를 사용하기 위해서입니다. 3×3에서 `len(pattern)`은 3이며 반복 번호는 `0, 1, 2`입니다.
 
-## 4. 실행 방법과 두 가지 모드
+## 4. 실행 방법과 네 가지 모드
 
 ### 개발 환경
 
@@ -125,6 +125,8 @@ Windows에서 `python` 명령이 없으면 `py main.py`를 시도할 수 있습�
 [모드 선택]
 1. 사용자 입력 (3x3)
 2. data.json 분석
+3. 패턴 자동 생성 (보너스)
+4. 1차원 최적화 비교 (보너스)
 0. 종료
 선택:
 ```
@@ -149,47 +151,94 @@ Windows에서 `python` 명령이 없으면 `py main.py`를 시도할 수 있습�
 ### 모드 2 — `data.json` 자동 분석
 
 1. 메뉴에서 `2`를 선택합니다.
-2. `filters`(비교용 필터)와 `patterns`(검사할 모양)을 읽습니다.
-3. `size_3`, `size_5`, `size_13`, `size_25`처럼 이름에서 크기를 읽어 맞는 필터를 선택합니다.
-4. 각각의 Cross/X 점수를 계산합니다.
-5. 미리 기록된 정답인 `expected`와 실제 `판정`을 비교해 PASS/FAIL을 표시합니다.
+2. `data.json`의 `filters`(크기별 Cross/X 비교용 필터)와 `patterns`(검사할 입력 및 기대 정답)를 읽습니다.
+3. `size_3_1`처럼 케이스 이름에 들어 있는 `size_숫자`를 읽어 같은 크기의 필터를 찾습니다.
+4. 각 패턴의 Cross 점수와 X 점수를 `mac()`로 계산한 뒤 `compare_scores()`로 판정합니다.
+5. `expected`의 `+` 또는 `x`를 `normalize_label()`로 `Cross` 또는 `X`로 바꾸어 판정과 비교하고 PASS/FAIL을 표시합니다.
 
-**학습용 예제에서 검증된 결과**
+#### 현재 GitHub `data.json` 구조와 데이터 규모
 
-| 검사 대상 | Cross | X | 판정 | 기대 정답 | 결과 |
-|---|---:|---:|---|---|---|
-| 3×3 십자가 | 5.0 | 1.0 | Cross | Cross | ✅ PASS |
-| 3×3 X | 1.0 | 5.0 | X | X | ✅ PASS |
-| 5×5 십자가 | 9.0 | 1.0 | Cross | Cross | ✅ PASS |
-| 5×5 X | 1.0 | 9.0 | X | X | ✅ PASS |
-| 13×13 십자가 | 25.0 | 1.0 | Cross | Cross | ✅ PASS |
-| 13×13 X | 1.0 | 25.0 | X | X | ✅ PASS |
-| 25×25 십자가 | 49.0 | 1.0 | Cross | Cross | ✅ PASS |
-| 25×25 X | 1.0 | 49.0 | X | X | ✅ PASS |
+| JSON 항목 | 저장 내용 | 현재 데이터 |
+|---|---|---|
+| `_notice` | 공식 과제 데이터가 아닌 학습용 예제임을 알리는 문구 | `학습 및 검증용 예제. 교육기관의 공식 과제 data.json이 아닙니다.` |
+| `filters` | 크기별 비교 필터 | `size_3`, `size_5`, `size_13`, `size_25` (각각 `cross`, `x` 필터) |
+| `patterns` | 각 케이스의 `input` 배열과 `expected` 정답 | 총 8건: 크기별 Cross 1건, X 1건 |
 
-**총 8건 / 통과 8건 / 실패 0건** (학습용 예제 기준)
+실제 파일에는 다음 **4개 크기**가 있습니다. 각 크기는 Cross/X 필터 **2개**와 검사 패턴 **2건**을 포함합니다.
+
+| 한 변의 크기 N | 필터 개수 | 패턴 케이스 ID | 정답 원문 |
+|---|---:|---|---|
+| 3 | 2 | `size_3_1`, `size_3_2` | `+`, `x` |
+| 5 | 2 | `size_5_1`, `size_5_2` | `+`, `x` |
+| 13 | 2 | `size_13_1`, `size_13_2` | `+`, `x` |
+| 25 | 2 | `size_25_1`, `size_25_2` | `+`, `x` |
+
+**파일 일부 발췌(3×3만 표시):** 실제 `data.json`에는 이 외에 5×5, 13×13, 25×25 데이터도 있습니다.
+
+```json
+{
+  "filters": {
+    "size_3": {
+      "cross": [[0,1,0],[1,1,1],[0,1,0]],
+      "x": [[1,0,1],[0,1,0],[1,0,1]]
+    }
+  },
+  "patterns": {
+    "size_3_1": {"input": [[0,1,0],[1,1,1],[0,1,0]], "expected": "+"},
+    "size_3_2": {"input": [[1,0,1],[0,1,0],[1,0,1]], "expected": "x"}
+  }
+}
+```
+
+위 코드는 원본 구조를 보여주기 위해 `_notice`와 다른 크기의 케이스를 생략한 **발췌 예시**입니다. `expected` 값인 `+`와 `x`는 내부적으로 각각 `Cross`, `X`로 정규화합니다.
+
+#### 현재 `data.json`의 케이스별 MAC 결과
+
+아래 수치는 현재 GitHub에 저장된 `data.json`의 입력 배열과 필터를 이용해 **동일 위치 곱셈의 합계**를 계산한 결과입니다. 실행 시간은 PC 환경에 따라 달라지므로 포함하지 않았습니다.
+
+| 케이스 ID | 크기 | `expected` 원문 | 정규화 | Cross 점수 | X 점수 | 판정 | 결과 |
+|---|---|---|---|---:|---:|---|---|
+| `size_3_1` | 3×3 | `+` | Cross | 5.0 | 1.0 | Cross | PASS |
+| `size_3_2` | 3×3 | `x` | X | 1.0 | 5.0 | X | PASS |
+| `size_5_1` | 5×5 | `+` | Cross | 9.0 | 1.0 | Cross | PASS |
+| `size_5_2` | 5×5 | `x` | X | 1.0 | 9.0 | X | PASS |
+| `size_13_1` | 13×13 | `+` | Cross | 25.0 | 1.0 | Cross | PASS |
+| `size_13_2` | 13×13 | `x` | X | 1.0 | 25.0 | X | PASS |
+| `size_25_1` | 25×25 | `+` | Cross | 49.0 | 1.0 | Cross | PASS |
+| `size_25_2` | 25×25 | `x` | X | 1.0 | 49.0 | X | PASS |
+
+**총 8건 / 계산상 정답 일치 8건 / 불일치 0건** (현재 저장소의 학습용 데이터 기준). 이 수치는 **공식 과제 데이터에 대한 검증 결과가 아니며**, 프로그램의 실제 실행은 `python main.py` → 메뉴 `2`로 확인할 수 있습니다.
 
 ### 자동 검사
 
-프로그램이 실행 중이면 메뉴에서 `0`으로 종료한 후, **`PS C:\...>`가 표시된 PowerShell에서** 실행합니다.
+프로그램이 실행 중이면 메뉴에서 `0`으로 종료한 후, PowerShell에서 다음 명령을 실행합니다.
 
 ```powershell
 python -m unittest -v
 ```
 
-```text
-test_close_scores_undecided ... ok
-test_cross_vs_x ... ok
-test_flattened_mac_invalid_length ... ok
-test_flattened_mac_matches_original ... ok
-test_generator_invalid_size ... ok
-test_generator_recognizes_both_patterns ... ok
-test_invalid_shape ... ok
-test_sample_data ... ok
+`test_main.py`에 현재 정의된 **10개** 자동 테스트는 다음과 같습니다.
 
-Ran 8 tests
+1. `test_cross_vs_x`
+2. `test_close_scores_undecided`
+3. `test_invalid_shape`
+4. `test_sample_data`
+5. `test_flattened_mac_matches_original`
+6. `test_generator_recognizes_both_patterns`
+7. `test_flattened_mac_invalid_length`
+8. `test_generator_invalid_size`
+9. `test_label_normalization`
+10. `test_epsilon_boundary_behavior`
+
+교육장 PC에서 실행해 확인한 결과는 `Ran 10 tests` 및 `OK`입니다. JSON의 예제 케이스 8건과 Python 단위 테스트 10개는 **서로 다른 검증 개수**입니다.
+
+```text
+Ran 10 tests in ...s
+
 OK
 ```
+
+---
 
 ## 5. 오류를 막기 위한 장치
 
@@ -238,7 +287,7 @@ xychart-beta
 - 핵심 MAC 계산의 **시간 복잡도는 `O(N²)`**: 한 변이 2배면 확인할 위치가 약 4배가 됩니다.
 - 프로그램은 각 크기의 MAC를 **10회 실행해 평균 시간(ms)**을 측정합니다.
 - **시간은 컴퓨터 성능과 실행 환경에 따라 변합니다.** 곱셈 수는 고정이지만 측정 시간은 고정되지 않습니다.
-- 현재 예제 `data.json`은 **3×3·5×5·13×13·25×25**에 각각 Cross·X 정답 패턴 2개씩 포함합니다. 이는 공식 과제 데이터와 구별됩니다.
+- 현재 GitHub의 `data.json`에는 **3×3·5×5·13×13·25×25**의 크기별 Cross/X 필터 2개와 정답 패턴 2건씩, **총 8개 패턴**이 있습니다. 자세한 구조와 실제 계산값은 4절을 참조하세요. 이는 공식 과제 데이터와 구별됩니다.
 - 실제 NPU는 대량의 MAC를 효율적으로 수행하는 장치이며, 이 프로젝트는 **NPU를 직접 구동하거나 인공지능을 학습시키지는 않습니다.**
 
 ## 7. 프로젝트 파일과 Python 용어
@@ -250,6 +299,8 @@ mini-npu-simulator/
 ├── test_main.py   # 자동 검사 코드
 ├── create_sample_data.py # 학습용 예제 JSON 생성기
 ├── README.md      # 프로젝트 설명서
+├── images/        # 프로그램 흐름도 이미지
+├── presentations/ # 동료평가 발표자료(PPT/PDF)
 └── .gitignore     # 임시 파일의 Git 관리 제외
 ```
 
@@ -331,7 +382,7 @@ Cross           X
 python create_sample_data.py
 ```
 
-파일이 이미 있다면 `yes`를 입력해야 덮어씁니다. **공식 과제 데이터를 받은 경우에는 이 명령어를 실행하지 마세요.** 공식 파일을 학습용 예제로 바꿀 수 있습니다.
+파일이 이미 있다면 `yes`를 입력해야 덮어씁니다. **기존 `data.json`을 직접 수정했거나 공식 과제 데이터를 받은 경우 이 명령어를 실행하지 마세요.** 현재 수정된 데이터가 학습용 기본 예제로 덮어써질 수 있습니다. 변경된 JSON에 맞춰 README를 갱신할 때는 먼저 실제 파일 내용을 확인해야 합니다.
 
 ## 10. 📋 과제 필수 요구사항 확인표
 
